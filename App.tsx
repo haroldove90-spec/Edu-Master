@@ -38,7 +38,6 @@ const App: React.FC = () => {
     capacity: 20
   });
 
-  // Lógica de carga desde Supabase
   useEffect(() => {
     const fetchData = async () => {
       if (!isDbConnected()) return;
@@ -49,16 +48,16 @@ const App: React.FC = () => {
         const { data: dbSessions } = await supabase!.from('sessions').select('*');
         const { data: dbEnrollments } = await supabase!.from('enrollments').select('*');
 
-        if (dbCourses) setCourses(dbCourses);
-        if (dbSessions) {
+        if (dbCourses && dbCourses.length > 0) setCourses(dbCourses);
+        if (dbSessions && dbSessions.length > 0) {
           const formattedSessions = dbSessions.map(s => ({
             ...s,
-            startDate: new Date(s.start_date),
-            endDate: new Date(s.end_date)
+            startDate: new Date(s.start_date || s.startDate),
+            endDate: new Date(s.end_date || s.endDate)
           }));
           setSessions(formattedSessions);
         }
-        if (dbEnrollments) setEnrollments(dbEnrollments);
+        if (dbEnrollments && dbEnrollments.length > 0) setEnrollments(dbEnrollments);
       } catch (error) {
         console.error("Error cargando de Supabase:", error);
       } finally {
@@ -92,7 +91,6 @@ const App: React.FC = () => {
       status: 'confirmed'
     };
 
-    // Intentar guardar en Supabase si está disponible
     if (isDbConnected()) {
       const { error } = await supabase!.from('enrollments').insert([newEnrollmentData]);
       if (error) {
@@ -101,7 +99,6 @@ const App: React.FC = () => {
       }
     }
 
-    // Actualización local para feedback inmediato
     const newEnrollment: Enrollment = {
       id: `e${Date.now()}`,
       sessionId: enrollingSession.id,
@@ -132,7 +129,6 @@ const App: React.FC = () => {
         return;
       }
     }
-    // Fallback local
     const newC: Course = { ...courseData as Course, id: Date.now().toString() };
     setCourses(prev => [newC, ...prev]);
   };
