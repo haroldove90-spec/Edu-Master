@@ -1,28 +1,41 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 
-// Detectar el entorno de forma segura para evitar ReferenceError: process is not defined
-const getEnv = (key: string): string => {
-  // Fix: Cast import.meta to any to access environment variables from build tools like Vite/Vercel which might not be in the default ImportMeta types.
-  const meta = import.meta as any;
-  if (typeof meta !== 'undefined' && meta.env) {
-    return meta.env[key] || '';
-  }
-  // Fix: Use a safe check for the process global and cast to any to bypass potential environment-specific type missing errors.
-  const proc = typeof process !== 'undefined' ? (process as any) : null;
-  if (proc && proc.env) {
-    return proc.env[key] || '';
+/**
+ * Obtiene variables de entorno de forma segura intentando múltiples métodos
+ * para máxima compatibilidad con Vercel, Vite y otros entornos.
+ */
+const getSafeEnv = (key: string): string => {
+  try {
+    // Intento estilo Vite (Estándar para Vercel)
+    // Fix: Accessing .env on import.meta by casting to any to bypass strict type checking
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
+      return (import.meta as any).env[key];
+    }
+    
+    // Intento estilo Process (Node.js / Polyfills)
+    // Fix: Accessing .env on process by casting to any to bypass strict type checking
+    if (typeof process !== 'undefined' && (process as any).env && (process as any).env[key]) {
+      return (process as any).env[key];
+    }
+  } catch (e) {
+    console.warn(`Aviso: Error al acceder a ${key}:`, e);
   }
   return '';
 };
 
-const supabaseUrl = getEnv('VITE_SUPABASE_URL');
-const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
+const supabaseUrl = getSafeEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getSafeEnv('VITE_SUPABASE_ANON_KEY');
 
-// Inicializamos el cliente solo si las llaves existen para evitar errores en local
+// Inicializamos el cliente solo si las llaves existen
 export const supabase = (supabaseUrl && supabaseAnonKey) 
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-// Helper para verificar si la DB está conectada
-export const isDbConnected = () => !!supabase;
+// Helper para verificar conexión
+export const isDbConnected = () => {
+  if (!supabase) {
+    console.info("Info: Corriendo en modo offline/local (No se detectaron llaves de Supabase).");
+    return false;
+  }
+  return true;
+};
