@@ -1,0 +1,7 @@
+{
+  "name": "EduMaster - Professional Course Management System",
+  "description": "A high-end platform for academic management with Supabase integration, real-time scheduling, student tracking, and selfie profile verification.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
